@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Python
+__pycache__/
+backend/__pycache__/
+backend/app/**/__pycache__/
+*.py[cod]
+*$py.class
+*.env
+.env
+backend/.env
+venv/
+.venv/
+env/
+ENV/
+
+# Database & Cache
+*.db
+*.sqlite
+*.sqlite3
+backend/*.db
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log

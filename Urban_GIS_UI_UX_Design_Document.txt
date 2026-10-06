@@ -1,0 +1,376 @@
+URBAN GIS ECOLOGICAL INTELLIGENCE PLATFORM
+UI/UX & Product Design Document
+Google Maps interaction model × Zara-inspired visual language
+Item
+Specification
+Product type
+Web-based GIS Urban Planning & Ecological Decision Support System
+Primary users
+Urban Analysts, Planners, Administrators, Citizens
+Frontend
+React + Vite + MapLibre GL JS + Tailwind CSS
+Backend
+FastAPI
+Spatial database
+PostgreSQL + PostGIS
+Routing
+pgRouting
+Authentication
+Supabase Auth
+Design direction
+Minimal, editorial, map-first, premium
+Prepared from the supplied GIS Database Design v2.0 and Technology Stack v2.0 documents
+1. Product Vision
+The platform is a modern Web-GIS decision-support system for understanding urban ecological conditions, land-use change, accessibility, and facility connectivity.
+The interface combines the interaction model of Google Maps with a more restrained, editorial and premium visual language inspired by Zara.
+Design principle
+“The map is the product. The interface should disappear when the user is exploring it.”
+2. Source-Aligned Product Scope
+The supplied database design adds Module G (Connectivity Reporting), including a ROAD_NETWORK table for OSM/pgRouting topology and a FACILITY_CONNECTIVITY table for cached nearest-facility results.
+Road-network topology supports shortest-path and isochrone queries.
+Connectivity results cover hospitals, schools and major roads/highways.
+Results include network distance, travel time and route geometry.
+Connectivity supports driving and walking modes.
+Public, view-only sharing is supported through a shareable token.
+Existing analyst modules A–F remain centered on LULC, NDVI, UHI and AHP/TOPSIS.
+3. Core Product Experience
+Analyst Mode
+Study-area exploration
+Satellite imagery
+Land-use / land-cover analysis
+NDVI
+NDBI
+Land-surface temperature / UHI
+Change detection
+Ecological impact assessment
+AHP/TOPSIS analysis
+Accessibility analysis
+Facility connectivity
+Map-layer comparison
+Reports and exports
+Citizen Mode
+Enter an address.
+Locate the address on the map.
+Select travel mode.
+View nearest hospital.
+View nearest school.
+View nearest highway.
+See route distance and estimated travel time.
+View routes directly on the map.
+Share the result using a public link.
+4. Visual Design Language
+The application should feel:
+Minimal · Architectural · Editorial · Geographic · Premium · Precise
+Avoid
+Excessive gradients
+Excessive rounded cards
+Thick borders
+Excessive shadows
+Dense GIS toolbars
+Rainbow-style GIS layers
+Large collections of icons
+Decorative dashboard widgets
+Use
+White / warm off-white surfaces
+Charcoal and black typography
+Soft grey dividers
+One restrained accent color
+Thin borders
+Large typography
+Compact controls
+Generous whitespace
+5. Color System
+Token
+Value
+Usage
+Background
+#F7F7F5
+Application background
+Surface
+#FFFFFF
+Panels / cards
+Primary Text
+#111111
+Main text
+Secondary Text
+#6F6F6F
+Metadata
+Border
+#E5E5E2
+Dividers
+Map Dark
+#222222
+Map labels / roads
+Accent
+#8B0000
+Selected route / primary action
+Success
+#315C45
+Positive ecological indicator
+Warning
+#9A7B27
+Moderate risk
+Danger
+#7A2424
+High impact
+Rule: UI colors communicate state, not decoration. The map already carries geographic information.
+6. Typography
+Level
+Recommended size
+Purpose
+Page title
+42 px
+Major screen headings
+Section title
+24 px
+Major content groups
+Primary information
+16 px
+Main values and labels
+Secondary information
+14 px
+Supporting text
+Metadata
+12 px
+Timestamps, technical context
+Primary font: Inter. Optional editorial display fallback: Helvetica Neue / Arial / Inter.
+7. Application Shell
+The main application should use a full-screen map canvas. Panels float over the map rather than permanently dividing the screen.
+┌──────────────────────────────────────────────────────────────┐│ LOGO             Search / Address              Profile       ││                                                              ││                         MAP                                  ││                                                              ││                                                  +           ││                                                  −           ││                                                              ││                         Scale                                │└──────────────────────────────────────────────────────────────┘
+Target: approximately 85–90% of the viewport should remain available to the map.
+8. Top Navigation
+Left: product logo, e.g. URBANA or ECOGIS.
+Center: prominent address/place search.
+Right: Analyst, Layers, Reports and Profile.
+Navigation should remain visually quiet and compact.
+9. Search Experience
+┌──────────────────────────────────────────────┐│ ◯  Search an address or place                │└──────────────────────────────────────────────┘
+Support address, locality, facility, road and coordinate search.
+Use Nominatim + fuzzy matching for geocoding.
+Display contextual suggestions and recent searches.
+10. Map Design
+MapLibre GL JS is the primary map-rendering library. The default map should be light, minimal and low-saturation.
+Map element
+Visual treatment
+Major roads
+Slightly darker grey
+Minor roads
+Light grey
+Selected route
+Single restrained accent
+Buildings
+Very subtle grey
+Water
+Muted blue-grey
+Vegetation
+Muted green
+Administrative boundaries
+Very thin
+Labels
+Minimal
+11. Map Controls
+                     +                     −                  ◉ Locate                  ▣ Layers
+Controls should be small, square and clean. Avoid oversized pill-shaped controls.
+12. Layer Control
+┌───────────────────────────────┐│ MAP LAYERS                    ││                               ││ BASE MAP                      ││ ○ Light                       ││ ○ Satellite                   ││                               ││ ENVIRONMENT                   ││ □ NDVI                        ││ □ NDBI                        ││ □ Land Surface Temperature    ││ □ Land Use / Land Cover       ││                               ││ URBAN                         ││ □ Roads                       ││ □ Buildings                   ││ □ Facilities                  ││                               ││ ANALYSIS                      ││ □ Change Detection            ││ □ Ecological Impact           │└───────────────────────────────┘
+13. Ecological Analysis Mode
+┌──────────────────────────────┐│ NDVI                         ││                              ││ Vegetation Health            ││                              ││ Mean NDVI       0.42         ││ High vegetation  28%         ││ Low vegetation   17%         ││                              ││ [ View statistics ]          │└──────────────────────────────┘
+Analytical panels should appear only when requested so that the map remains dominant.
+14. Ecological Impact Panel
+ECOLOGICAL IMPACTStudy AreaNew Town────────────────────────────Vegetation             0.72Built-up Density       0.61Surface Temperature    34.8°CLand-use Change        18.4%────────────────────────────IMPACT LEVELMODERATE[ View detailed assessment ]
+15. AHP / TOPSIS Decision Interface
+The MCDA interface should make criteria weighting and ranking understandable without requiring GIS expertise.
+CRITERIAVegetation       30%Accessibility    25%Temperature      20%Built-up Density 15%Land-use Change  10%
+Use sliders for weight adjustment and a ranked list for the final TOPSIS results.
+PRIORITY AREAS01   Sector V     Score 0.8602   Action Area I     Score 0.8103   Sector III     Score 0.74
+16. Change Detection
+Use a before/after split-map interaction with a draggable divider.
+┌─────────────────────────────┬─────────────────────────────┐│             2019            │             2026            ││                             │                             ││          MAP                │           MAP               ││                             │                             │└─────────────────────────────┴─────────────────────────────┘                 ◀━━━━━━●━━━━━━▶
+17. Module G — Connectivity
+Connectivity is the strongest citizen-facing experience. The underlying flow is:
+ADDRESS  ↓NOMINATIM GEOCODING  ↓GEOCODED POINT  ↓CHECK FACILITY_CONNECTIVITY CACHE  ├── valid cache → return result  └── no cache        ↓     pgRouting        ↓    ROAD_NETWORK        ↓Nearest Hospital / School / Highway        ↓Distance + Travel Time + Route Geometry        ↓FACILITY_CONNECTIVITY        ↓MAP + RESULT PANEL
+18. Citizen Connectivity Home Screen
+How connected is your location?┌────────────────────────────────────┐│  Enter your address                │└────────────────────────────────────┘        [ Analyse location ]
+Avoid GIS terminology on the initial citizen screen.
+19. Connectivity Result
+12 Park Street, KolkataCONNECTED TOHOSPITALAMRI Hospital1.8 km7 minSCHOOLSt. Xavier's0.9 km4 minHIGHWAYEM Bypass3.2 km9 min
+20. Route Visualization
+Selecting a facility highlights the shortest route directly on the map. Use a single strong route color.
+             MAP       ● HOME        ╲         ╲          ╲━━━━━━━● HOSPITAL
+21. Travel Mode
+TRAVEL MODE[ Walking ]     [ Driving ]
+Changing mode should update travel time and the displayed route result.
+22. Connectivity Summary Card
+YOUR LOCATION12 Park Street────────────────────────NEAREST HOSPITAL1.8 km7 minAMRI Hospital[ Show route ]────────────────────────NEAREST SCHOOL0.9 km4 minSt. Xavier's[ Show route ]────────────────────────HIGHWAY ACCESS3.2 km9 minEM Bypass[ Show route ]
+23. Share Experience
+The supplied database design supports a shareable token for public, view-only connectivity results.
+SHARE REPORTYour connectivity analysis is ready.[ Copy link ][ Download report ]
+24. Facility Markers
+Facility
+Marker direction
+Hospital
+Minimal cross symbol
+School
+Minimal square / building symbol
+Highway
+Simple road marker
+Avoid colorful cartoon-style map pins.
+25. Analyst Sidebar
+┌───────────────────────────┐│ STUDY AREA                ││                           ││ Overview                  ││ Land Use                  ││ NDVI                      ││ UHI                       ││ Change Detection          ││ Accessibility             ││ Connectivity              ││ Impact Assessment         ││                           ││ ─────────────────────     ││ Reports                   ││ Export                    │└───────────────────────────┘
+The sidebar should be collapsible and default to collapsed when map exploration is the primary task.
+26. Report Design
+01 — Study Area: large map
+02 — Existing Conditions: key ecological metrics
+03 — Land-use Change: before/after map
+04 — Environmental Indicators: NDVI / NDBI / UHI
+05 — Accessibility: road and facility connectivity
+06 — Impact Assessment: AHP/TOPSIS results
+07 — Recommendations: priority zones
+27. Dashboard Composition
+Avoid a traditional dashboard with many colored cards. Use a map + information composition.
+┌───────────────────────────────────────────────┐│ STUDY AREA                                    ││ 124 km²                                       │├───────────────────────┬───────────────────────┤│                       │ KEY INDICATORS        ││        MAP            │ NDVI       0.42       ││                       │ UHI        34.8°C     ││                       │ CHANGE     18.4%      │└───────────────────────┴───────────────────────┘
+28. Responsive Design
+Viewport
+Design approach
+Desktop
+Full-screen map, floating panels, collapsible sidebar, large analytical workspace
+Tablet
+Reduced sidebar, floating bottom controls, compact layer menu
+Mobile
+Citizen-first map, address search, bottom result card, simplified controls
+29. Microinteractions
+Interaction
+Motion
+Map movement
+150–250 ms easing
+Panel appearance
+Fade + 8–12 px vertical movement
+Route drawing
+Animated line reveal
+Layer switching
+Crossfade
+Search
+Progressive suggestions
+Animation should remain subtle and calm.
+30. Component System
+AppShellMapCanvasTopNavigationSearchBarSearchResultsLayerPanelMapControlsLegendFloatingPanelMetricMetricGroupFacilityCardRouteCardTravelModeSelectorEcologicalPanelImpactPanelChangeDetectionSliderCriteriaWeightPanelRankingListReportPanelShareDialogExportDialog
+31. Frontend Architecture
+src/├── components/│   ├── map/│   ├── navigation/│   ├── layers/│   ├── connectivity/│   ├── analytics/│   ├── reports/│   └── ui/├── pages/│   ├── Home/│   ├── Analyst/│   ├── Citizen/│   ├── Connectivity/│   └── Reports/├── services/│   ├── api/│   ├── geocoding/│   ├── routing/│   └── analytics/├── hooks/├── stores/├── utils/└── styles/
+32. Technical Architecture
+FRONTENDReact + Vite       ↓Tailwind CSS + Headless UI       ↓MapLibre GL JSBACKENDFastAPI ├── Geocoding API ├── Connectivity API ├── Routing API ├── Ecological Analysis API ├── MCDA API └── Report APIDATASupabase ├── PostgreSQL ├── PostGIS ├── Supabase Auth └── Storage
+33. Map Data Strategy
+Import the district-level OSM road network once.
+Build pgRouting topology once during initialization.
+Query the pre-built network for shortest paths and isochrones.
+Pre-generate static map tiles where appropriate.
+Use PMTiles / MBTiles for static tile delivery when suitable.
+Avoid running OSMnx on every user request.
+34. Performance Principles
+Use vector tiles wherever possible.
+Use optimized raster overviews.
+Use the pre-built pgRouting graph.
+Cache connectivity results.
+Lazy-load analytical modules.
+Do not load every GIS layer simultaneously.
+Split study areas into zones if free-tier storage limits are reached.
+35. Design States
+State
+UI treatment
+Loading
+Minimal skeleton / spinner
+Empty
+No analysis selected; prompt user to choose a layer
+Error
+Clear explanation and retry action
+Success
+Clear numerical result
+Unavailable
+Clearly distinguish unavailable data from zero values
+36. Accessibility
+Keyboard navigation
+Visible focus states
+Sufficient contrast
+Screen-reader labels
+Accessible form controls
+Non-color-dependent indicators
+Adequate touch targets
+37. Product Differentiation
+Google Maps-inspired
+Zara-inspired
+Search
+Editorial typography
+Map navigation
+Monochrome interface
+Layers
+Large whitespace
+Markers
+Architectural layouts
+Routing
+Restrained accent colors
+Location discovery
+Premium visual hierarchy
+Facility information
+Quiet animations
+38. Design North Star
+Can I understand the map immediately?
+Can I find a location in under 5 seconds?
+Can I access analysis without opening a complicated dashboard?
+Can a non-GIS citizen understand the connectivity result?
+Does the interface look premium without becoming decorative?
+39. Final UI Hierarchy
+MAP  ↓LOCATION / AREA  ↓KEY INFORMATION  ↓ANALYSIS  ↓DETAILS
+The map should never become secondary to the dashboard.
+40. Recommended Home Screen
+                         URBANA                  Understand your city.       ┌────────────────────────────────┐       │  Search an address or place     │       └────────────────────────────────┘              Explore the map       [ Analyst ]          [ Citizen ]
+41. Final Product Character
+The finished product should communicate:
+Quality
+How the design communicates it
+Precision
+Typography and structured information
+Intelligence
+Analytical layers and decision support
+Trust
+Restrained design
+Accessibility
+Familiar map interaction
+Premium quality
+Editorial visual system
+Technical sophistication
+GIS layers, routing, ecological analysis and spatial intelligence
+Design direction: MAP-FIRST. DATA-LIGHT. EDITORIAL. INTELLIGENT.
+42. Implementation Priority
+Phase 1 — Core Map
+MapLibre map
+Base map
+Search
+Location marker
+Zoom controls
+Layer panel
+Phase 2 — GIS
+Satellite layer
+LULC
+NDVI
+NDBI
+UHI
+Change detection
+Phase 3 — Connectivity
+Address geocoding
+Road network
+pgRouting
+Hospital routing
+School routing
+Highway routing
+Travel mode
+Connectivity caching
+Phase 4 — Decision Support
+AHP
+TOPSIS
+Priority zones
+Ecological impact score
+Recommendations
+Phase 5 — Reports
+Report generation
+Export
+Shareable connectivity links
+Read-only public reports

@@ -1,0 +1,131 @@
+TECHNOLOGY STACK — FREE-TIER EDITION
+Web-GIS Urban Planning DSS (Optimized for Zero-Cost Deployment)
+Version: 2.0 — Updated September 2026
+Status: Ready for Development
+INTRODUCTION
+This is a revised technology stack optimized for free and low-cost hosting, compatible with the updated SRS (v2.0) including the new Module G connectivity features. Every paid service in the original stack has been replaced with a free-tier or open-source alternative that meets or exceeds the stated requirements.
+Key principles:
+• No mandatory paid services — all core features use free tiers or open-source software
+• Single-server deployment on Render.com or Railway.com free tier (sufficient for ≤10 concurrent analyst users and ≤100 citizen users)
+• Database and auth integrated into one Supabase account (500 MB PostGIS, 50k MAU free)
+• Frontend deployed on Vercel or Netlify (free; same approach as Polluture)
+• All external APIs are either free or have generous free tiers (no rate-limiting surprise bills)
+• Scalability path: swap individual components for paid equivalents as user load grows
+1. FRONTEND
+Layer
+Technology
+Purpose / Notes
+Web mapping library
+MapLibre GL JS (free, open source)
+Interactive map rendering, better performance than Leaflet, vector-tile ready, no API key required
+Application framework
+React.js + Vite
+Lightweight build tool, fast HMR, ~10× faster than Create React App
+UI/styling
+Tailwind CSS + Headless UI
+Free, utility-first CSS; Headless UI provides accessible component primitives
+Charting
+Recharts or Chart.js
+Free, open source; Recharts integrates well with React
+Frontend hosting
+Vercel (free tier) or Netlify
+Free tier: 100 GB/month bandwidth, unlimited builds, auto-deploys from Git
+2. BACKEND & API
+Layer
+Technology
+Purpose / Notes
+API server
+FastAPI (Python)
+Fast, async, built-in OpenAPI docs; perfect for geospatial APIs
+Backend hosting
+Render.com free tier or Railway
+Free: 750 hours/month (always-on), autoscale to 0 when idle, cold start ~15 sec. Sufficient for ≤10 concurrent users
+Authentication
+Supabase Auth (JWT)
+Free: 50,000 MAU; role-based access control via JWT claims; no external auth service needed
+Task queue (async)
+Supabase Edge Functions OR BullMQ on Railway
+Edge Functions: free, serverless, <100 ms cold start, ideal for geocoding/isochrone batches
+3. GEOPROCESSING & ANALYTICS
+Component
+Technology
+Purpose / Notes
+Raster/vector processing
+GDAL, Rasterio, Fiona, Shapely, GeoPandas (Python, all free)
+Classification, NDVI/NDBI/LST, change detection; all open source
+Network analysis
+pgRouting (PostGIS) OR NetworkX + OSMnx
+pgRouting: native to PostGIS, best for pre-computed networks
+MCDA engine
+Custom Python (NumPy/Pandas)
+Implement AHP weighting and TOPSIS ranking as FastAPI endpoint
+Remote sensing
+Copernicus Open Access Hub (free, via sentinelsat)
+Sentinel-2 L2A data, free, no quota; ESA attribution required
+Geocoding
+Nominatim (OpenStreetMap) + fuzzy-match
+Free, no API key, fast for structured addresses
+4. DATA & STORAGE
+Layer
+Technology
+Purpose / Notes
+Spatial database
+Supabase (PostgreSQL 15 + PostGIS 3.3)
+Free: 500 MB, PostGIS included, vector/raster support
+Object storage
+Supabase Storage (1 GB free) OR Cloudflare R2 (10 GB free/month)
+Store GeoTIFF, PNG overviews, query results
+Map/tile serving
+PMTiles or .mbtiles served from storage
+Pre-generate tiles once using Tippecanoe, serve static files
+Caching
+HTTP caching headers + browser cache
+No Redis needed; static tiles have far-future Cache-Control
+5. INFRASTRUCTURE & DEVOPS
+Layer
+Technology
+Purpose / Notes
+Containerization
+Docker + docker-compose (local dev)
+Dockerfile for FastAPI backend
+Orchestration
+None (NOT Kubernetes)
+Single Render instance is sufficient
+Hosting
+Render (backend) + Vercel (frontend) + Supabase (data)
+Render free: 750 hrs/month; auto-deploys from Git
+CI/CD
+GitHub Actions (free)
+Auto-test, auto-deploy on merge to main
+Monitoring
+Render logs + Sentry (free tier)
+Sentry: 5,000 issues/month free
+CRITICAL IMPLEMENTATION NOTES
+Pre-compute the road network ONCE and store it in PostGIS:
+Download the district-level road network from OpenStreetMap using OSMnx. Run pgRouting topology build once. Store as table in Supabase. Query pre-built network for isochrones and connectivity—do NOT run OSMnx on every request.
+Pre-generate map tiles once:
+After classification, generate .mbtiles using tippecanoe or gdal2tiles. Upload to Supabase Storage or Cloudflare R2. Serve static tiles. Update frequency: weekly or monthly.
+Database size planning:
+500 MB Supabase free tier supports ~50 km² of classified LULC (at 10 m pixels) + road network + administrative layers. For larger areas, split into zones or upgrade to paid Supabase.
+ORIGINAL STACK → FREE-TIER STACK MAPPING
+Original (Paid)
+Issue
+Free-Tier Replacement
+AWS S3
+Costs $23/month
+Supabase Storage (1 GB free) + Cloudflare R2 (10 GB free)
+GeoServer
+Needs Java server; $50–200/month
+Pre-generate tiles, serve static
+Celery + Redis
+Redis costs money
+Supabase Edge Functions or BullMQ on Railway
+Sentinel Hub (paid)
+Paid tier after trial
+Copernicus Open Access Hub (free)
+Auth0
+Limited free tier
+Supabase Auth (50k MAU free)
+Cloud hosting
+Costs money
+Render + Vercel + Supabase (all free tiers)

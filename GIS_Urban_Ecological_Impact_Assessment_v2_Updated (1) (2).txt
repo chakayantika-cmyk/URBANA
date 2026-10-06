@@ -1,0 +1,149 @@
+GIS-BASED URBAN ECOLOGICAL IMPACT ASSESSMENT
+DATABASE DESIGN (Updated v2.0 — With Connectivity Tables)
+Land Use Change Detection · Network-Based Accessibility · Facility Connectivity
+INTRODUCTION & OBJECTIVES (Updated)
+This database design extends the original ecological impact assessment schema to support the new Module G (Connectivity Reporting) features described in SRS v2.0. The additions are:
+• ROAD_NETWORK table — stores the OSM/pgRouting road network topology and geometry for the study area
+• FACILITY_CONNECTIVITY table — stores pre-computed or cached nearest-facility results (distance, time, geometry) per geocoded address, indexed for fast citizen queries
+NEW TABLES (v2.0 Addition)
+Table: ROAD_NETWORK
+Stores the routable road-network topology for the study area, downloaded from OpenStreetMap and imported into PostGIS via pgRouting. This is a directed graph where edges represent road segments and nodes represent intersections. Built once during initialization and used for all shortest-path and isochrone queries.
+Field Name
+Data Type
+Description
+Key / Notes
+id
+Integer
+Unique identifier for the road segment (edge in pgRouting graph)
+PK
+osm_id
+BigInt
+Original OpenStreetMap way ID for traceability
+source
+Integer
+Start node ID (pgRouting source node)
+pgRouting
+target
+Integer
+End node ID (pgRouting target node)
+pgRouting
+length_m
+Decimal
+Length of the road segment in metres (projected CRS)
+Used for distance calcs
+highway_type
+Text
+OSM highway class: motorway, primary, secondary, residential, etc.
+For speed lookup
+speed_kmh
+Integer
+Estimated speed for this road type (default: 30 km/h urban, 60 km/h regional)
+For travel time calc
+one_way
+Boolean
+True if the segment is one-way; pgRouting reverses if needed
+For routing
+geometry
+LineString
+Spatial geometry of the road segment (projected CRS)
+For visualization
+Table: FACILITY_CONNECTIVITY
+Stores pre-computed or dynamically computed nearest-facility results for each geocoded address. Upon geocoding, the backend queries the ROAD_NETWORK for shortest-path distance and travel time to the nearest hospital, school, and major road (highway). Results are stored here for fast citizen dashboard access and to enable sharing/export.
+Field Name
+Data Type
+Description
+Key / Notes
+connectivity_id
+Integer
+Unique identifier for this connectivity result record
+PK
+geocoded_point_geom
+Point
+The geocoded address location (lat/lon, projected CRS)
+Spatial index
+address_text
+Text
+Original address string provided by citizen for reference
+travel_mode
+Text
+Either 'driving' or 'walking' (used to compute travel time differently)
+Affects speed
+nearest_hospital_id
+Integer
+Foreign key to the hospital facility location in FACILITIES table
+FK
+nearest_hospital_name
+Text
+Name of the nearest hospital (for display)
+Cached
+hospital_distance_km
+Decimal
+Network distance from geocoded point to nearest hospital (km)
+Computed once
+hospital_travel_time_min
+Decimal
+Estimated travel time from point to hospital (minutes)
+Depends on mode
+hospital_route_geom
+LineString
+The shortest-path route geometry (for map visualization)
+GeoJSON ready
+nearest_school_id
+Integer
+Foreign key to school facility
+FK
+nearest_school_name
+Text
+Name of nearest school
+Cached
+school_distance_km
+Decimal
+Network distance to nearest school (km)
+school_travel_time_min
+Decimal
+Estimated travel time to nearest school (minutes)
+school_route_geom
+LineString
+Shortest-path route to school (for visualization)
+nearest_highway_name
+Text
+Name or designation of nearest highway (e.g. NH-12, Ring Road)
+From ROAD_NETWORK
+highway_distance_km
+Decimal
+Distance from point to nearest highway access node (km)
+highway_travel_time_min
+Decimal
+Estimated travel time to highway (minutes)
+highway_route_geom
+LineString
+Route geometry from point to highway (for map display)
+query_timestamp
+Timestamp
+When this connectivity query was executed (for audit/refresh planning)
+shareable_link_token
+Text
+Unique token for public (view-only) sharing of this result, no login needed
+Optional
+DATA MODEL INTEGRATION NOTES
+1. ROAD_NETWORK is built once during system initialization (import from OSM + pgRouting topology build). It does not change unless you re-import the OSM data.
+2. FACILITY_CONNECTIVITY is populated on-demand: when a citizen geocodes an address (FR-G7), the FastAPI backend queries ROAD_NETWORK using pgRouting for shortest paths, then stores the result in FACILITY_CONNECTIVITY. This allows: (a) fast re-retrieval for the same address, (b) sharing via token, (c) historical audit trail.
+3. A FACILITIES table (not shown but assumed to exist) should contain hospital and school locations with names and geometry. The FACILITY_CONNECTIVITY table references this via nearest_hospital_id and nearest_school_id.
+4. All geometries in both new tables should use the projected CRS (e.g. UTM) for accurate distance/time computation in the FastAPI backend.
+IMPLEMENTATION NOTES FOR FREE-TIER DEPLOYMENT
+ROAD_NETWORK Sizing:
+A typical district-level road network (e.g., Kolkata or Bangalore) is 50–200 MB when stored in PostGIS. The Supabase free tier (500 MB total) can accommodate one full city's road network. If you hit the limit, either: (a) split into wards, (b) upgrade to paid Supabase ($25/month = 8 GB), or (c) serve pre-computed isochrones as static .mbtiles tiles instead of dynamic pgRouting queries.
+FACILITY_CONNECTIVITY Indexing:
+Create a spatial index on geocoded_point_geom to speed up citizen lookups of nearby cached results. Also index query_timestamp for cleanup jobs (e.g., delete records older than 30 days to stay under 500 MB).
+Caching Strategy:
+If the same address is geocoded twice, the backend checks FACILITY_CONNECTIVITY first. If found (within 1 hour), return cached result. If not found or stale, run pgRouting query again and insert new record.
+UPDATED ENTITY-RELATIONSHIP DIAGRAM
+The original schema (from v1.0) remains unchanged. The two new tables (ROAD_NETWORK and FACILITY_CONNECTIVITY) are independent additions:
+• ROAD_NETWORK is queried by the FastAPI backend but not stored/updated within the main GIS schema—it is maintained separately (pgRouting manages it).
+• FACILITY_CONNECTIVITY is new but does not change the relationships between existing tables (STUDY_AREA, SATELLITE_IMAGERY, LULC, etc.). It is an independent cache/result table.
+A citizen's address → connectivity report workflow does not require changes to the analyst-facing modules (A–F in the SRS). The analyst still works with LULC, NDVI, UHI, and AHP/TOPSIS in the same way. The citizen-facing portal simply consumes FACILITY_CONNECTIVITY results alongside the analyst layers.
+SUMMARY OF v2.0 UPDATES
+✓ ROAD_NETWORK table added to support pgRouting shortest-path and isochrone queries for Module G (Connectivity).
+✓ FACILITY_CONNECTIVITY table added to cache and share nearest-facility results per geocoded address.
+✓ Both tables optimized for free-tier PostGIS (500 MB Supabase) with indexing and caching strategies.
+✓ No changes to the existing ecological impact assessment schema (STUDY_AREA through IMPACT_ASSESSMENT tables).
