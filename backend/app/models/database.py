@@ -5,7 +5,10 @@ import time
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timezone
 
-DB_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "urbana_cache.db")
+if os.getenv("VERCEL"):
+    DB_FILE = "/tmp/urbana_cache.db"
+else:
+    DB_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "urbana_cache.db")
 
 def get_db_connection():
     conn = sqlite3.connect(DB_FILE)
