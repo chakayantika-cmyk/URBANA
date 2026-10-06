@@ -168,8 +168,9 @@ class NDVIResponse(BaseModel):
     grid_geojson: Optional[Dict[str, Any]] = None
     summary: MetricSummary
     date_acquired: str = "2026-09-15"
-    sensor: str = "Sentinel-2 L2A / Landsat-9"
+    sensor: str = "Copernicus Sentinel-2 L2A"
     is_demo: bool = False
+    is_data_available: bool = True
 
 class NDBIResponse(BaseModel):
     study_area: str
@@ -180,8 +181,9 @@ class NDBIResponse(BaseModel):
     grid_geojson: Optional[Dict[str, Any]] = None
     summary: MetricSummary
     date_acquired: str = "2026-09-15"
-    sensor: str = "Sentinel-2 L2A"
+    sensor: str = "Copernicus Sentinel-2 L2A"
     is_demo: bool = False
+    is_data_available: bool = True
 
 class LSTResponse(BaseModel):
     study_area: str
@@ -192,8 +194,9 @@ class LSTResponse(BaseModel):
     uhi_severity: Literal["low", "moderate", "severe", "critical"]
     grid_geojson: Optional[Dict[str, Any]] = None
     summary: MetricSummary
-    sensor: str = "Landsat-9 TIRS"
+    sensor: str = "USGS Landsat 8/9 Collection 2 L2 TIRS & Thermal Satellite Radiometry"
     is_demo: bool = False
+    is_data_available: bool = True
 
 class LULCClass(BaseModel):
     class_name: str
@@ -208,7 +211,9 @@ class LULCResponse(BaseModel):
     grid_geojson: Optional[Dict[str, Any]] = None
     accuracy_kappa: float = 0.89
     year: int = 2026
+    sensor: str = "ESA WorldCover & Sentinel-2 Classification"
     is_demo: bool = False
+    is_data_available: bool = True
 
 class ChangeDetectionResponse(BaseModel):
     study_area: str
@@ -218,9 +223,49 @@ class ChangeDetectionResponse(BaseModel):
     vegetation_loss_percent: float
     waterbody_change_percent: float
     total_converted_sqkm: float
-    change_matrix: Dict[str, Dict[str, float]]
+    change_matrix: Dict[str, float]
     change_geojson: Optional[Dict[str, Any]] = None
+    sensor: str = "Multitemporal Sentinel-2 & GHSL Built-up Comparison"
     is_demo: bool = False
+    is_data_available: bool = True
+
+# ==========================================
+# WOMEN SAFETY SCHEMAS
+# ==========================================
+
+class CrimeYearStat(BaseModel):
+    year: int
+    rape_cases: int
+    assault_modesty_cases: int
+    cruelty_husband_relatives: int
+    kidnapping_abduction: int
+    total_crimes_against_women: int
+    crime_rate_per_lakh: Optional[float] = None
+
+class LocalSpatialSafetyFactors(BaseModel):
+    police_stations_nearby: int
+    nearest_police_km: Optional[float] = None
+    lit_streets_percent: float
+    transit_hubs_nearby: int
+    infrastructure_safety_score: float
+
+class WomenSafetyResponse(BaseModel):
+    study_area: str
+    state_or_region: str
+    district_or_city: str
+    granularity: str
+    data_source: str
+    time_series_years: List[CrimeYearStat]
+    latest_year_total: int
+    historical_10yr_trend: Literal["Increasing", "Decreasing", "Stable", "Fluctuating"]
+    ten_year_change_percent: float
+    crime_rate_per_lakh_population: float
+    risk_score: float
+    risk_level: Literal["Low Risk", "Moderate Risk", "Elevated Risk", "High Risk"]
+    score_breakdown: Dict[str, Any]
+    key_insights: List[str]
+    disclaimer: str
+    is_data_available: bool = True
 
 # ==========================================
 # MCDA (AHP & TOPSIS) & IMPACT SCHEMAS
@@ -286,4 +331,5 @@ class ReportSummary(BaseModel):
     connectivity: Optional[FacilityConnectivityResult] = None
     ecological_impact: Optional[ImpactAssessmentResponse] = None
     mcda_ranking: Optional[TOPSISResponse] = None
+    women_safety: Optional[WomenSafetyResponse] = None
     share_token: str
