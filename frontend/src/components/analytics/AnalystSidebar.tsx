@@ -8,6 +8,7 @@ import {
   ChangeDetectionResponse,
   ImpactAssessmentResponse,
   TOPSISResponse,
+  WomenSafetyResponse,
   ActiveLayer
 } from '../../types';
 import {
@@ -38,13 +39,14 @@ interface AnalystSidebarProps {
   changeData: ChangeDetectionResponse | null;
   impactData: ImpactAssessmentResponse | null;
   topsisData: TOPSISResponse | null;
+  womenSafetyData: WomenSafetyResponse | null;
   activeLayer: ActiveLayer;
   onSelectLayer: (layer: ActiveLayer) => void;
   isLoading: boolean;
   onOpenReport: () => void;
 }
 
-type AnalystTab = 'overview' | 'lulc' | 'ndvi' | 'uhi' | 'change' | 'mcda' | 'impact';
+type AnalystTab = 'overview' | 'lulc' | 'ndvi' | 'uhi' | 'change' | 'mcda' | 'impact' | 'safety';
 
 export const AnalystSidebar: React.FC<AnalystSidebarProps> = ({
   isOpen,
@@ -57,6 +59,7 @@ export const AnalystSidebar: React.FC<AnalystSidebarProps> = ({
   changeData,
   impactData,
   topsisData,
+  womenSafetyData,
   activeLayer,
   onSelectLayer,
   isLoading,
@@ -75,6 +78,7 @@ export const AnalystSidebar: React.FC<AnalystSidebarProps> = ({
     else if (tab === 'ndvi') onSelectLayer('ndvi');
     else if (tab === 'uhi') onSelectLayer('lst');
     else if (tab === 'change') onSelectLayer('change');
+    else if (tab === 'safety') onSelectLayer('womenSafety');
     else if (tab === 'overview') onSelectLayer('none');
   };
 
@@ -125,6 +129,7 @@ export const AnalystSidebar: React.FC<AnalystSidebarProps> = ({
             { id: 'change', label: 'Change' },
             { id: 'mcda', label: 'AHP/TOPSIS' },
             { id: 'impact', label: 'Impact' },
+            { id: 'safety', label: 'Safety' },
           ].map((t) => (
             <button
               key={t.id}
@@ -240,52 +245,68 @@ export const AnalystSidebar: React.FC<AnalystSidebarProps> = ({
               {/* TAB 3: NDVI */}
               {activeTab === 'ndvi' && (
                 <div className="space-y-4">
-                  <div className="p-4 bg-[#FAF9F7] border border-[#E5E5E2]">
-                    <div className="text-[10px] uppercase font-bold text-[#315C45]">Mean Vegetation Index</div>
-                    <div className="text-[28px] font-bold text-[#111111] font-mono mt-1">
-                      {ndviData?.mean_ndvi}
+                  {ndviData?.is_data_available === false ? (
+                    <div className="p-4 bg-[#FAF9F7] border border-[#E5E5E2] text-center text-[#8B0000] font-semibold text-[12px]">
+                      Data Unavailable: Real-time STAC raster computation requires API keys or exceeds limits.
                     </div>
-                    <p className="text-[12px] text-[#6F6F6F] mt-2 leading-relaxed">
-                      {ndviData?.summary.interpretation}
-                    </p>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="p-4 bg-[#FAF9F7] border border-[#E5E5E2]">
+                        <div className="text-[10px] uppercase font-bold text-[#315C45]">Mean Vegetation Index</div>
+                        <div className="text-[28px] font-bold text-[#111111] font-mono mt-1">
+                          {ndviData?.mean_ndvi}
+                        </div>
+                        <p className="text-[12px] text-[#6F6F6F] mt-2 leading-relaxed">
+                          {ndviData?.summary.interpretation}
+                        </p>
+                      </div>
 
-                  <div className="space-y-2 text-[12px]">
-                    <div className="p-2.5 bg-white border border-[#E5E5E2] flex justify-between">
-                      <span className="text-[#315C45] font-semibold">Dense Canopy (&gt;0.45)</span>
-                      <span className="font-mono">{ndviData?.high_veg_percent}%</span>
-                    </div>
-                    <div className="p-2.5 bg-white border border-[#E5E5E2] flex justify-between">
-                      <span className="text-[#111111] font-semibold">Moderate Green (0.25–0.45)</span>
-                      <span className="font-mono">{ndviData?.moderate_veg_percent}%</span>
-                    </div>
-                    <div className="p-2.5 bg-white border border-[#E5E5E2] flex justify-between">
-                      <span className="text-[#8B0000] font-semibold">Sparse / Built (&lt;0.25)</span>
-                      <span className="font-mono">{ndviData?.low_veg_percent}%</span>
-                    </div>
-                  </div>
+                      <div className="space-y-2 text-[12px]">
+                        <div className="p-2.5 bg-white border border-[#E5E5E2] flex justify-between">
+                          <span className="text-[#315C45] font-semibold">Dense Canopy (&gt;0.45)</span>
+                          <span className="font-mono">{ndviData?.high_veg_percent}%</span>
+                        </div>
+                        <div className="p-2.5 bg-white border border-[#E5E5E2] flex justify-between">
+                          <span className="text-[#111111] font-semibold">Moderate Green (0.25–0.45)</span>
+                          <span className="font-mono">{ndviData?.moderate_veg_percent}%</span>
+                        </div>
+                        <div className="p-2.5 bg-white border border-[#E5E5E2] flex justify-between">
+                          <span className="text-[#8B0000] font-semibold">Sparse / Built (&lt;0.25)</span>
+                          <span className="font-mono">{ndviData?.low_veg_percent}%</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
               {/* TAB 4: UHI / LST */}
               {activeTab === 'uhi' && (
                 <div className="space-y-4">
-                  <div className="p-4 bg-[#FAF9F7] border border-[#E5E5E2]">
-                    <div className="text-[10px] uppercase font-bold text-[#8B0000]">Surface Thermal Anomaly</div>
-                    <div className="text-[28px] font-bold text-[#8B0000] font-mono mt-1">
-                      {lstData?.mean_temp_celsius}°C
+                  {lstData?.is_data_available === false ? (
+                    <div className="p-4 bg-[#FAF9F7] border border-[#E5E5E2] text-center text-[#8B0000] font-semibold text-[12px]">
+                      Data Unavailable: Thermal satellite data is not available for this area.
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-[#8B0000] text-white font-bold">
-                        UHI Severity: {lstData?.uhi_severity}
-                      </span>
-                      <span className="text-[11px] text-[#6F6F6F]">+{lstData?.uhi_intensity_celsius}°C Peak</span>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="p-4 bg-[#FAF9F7] border border-[#E5E5E2]">
+                        <div className="text-[10px] uppercase font-bold text-[#8B0000]">Surface Thermal Anomaly</div>
+                        <div className="text-[28px] font-bold text-[#8B0000] font-mono mt-1">
+                          {lstData?.mean_temp_celsius}°C
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <span className="text-[10px] uppercase font-mono px-2 py-0.5 bg-[#8B0000] text-white font-bold">
+                            UHI Severity: {lstData?.uhi_severity}
+                          </span>
+                          <span className="text-[11px] text-[#6F6F6F]">+{lstData?.uhi_intensity_celsius}°C Peak</span>
+                        </div>
+                      </div>
 
-                  <p className="text-[12px] text-[#6F6F6F] leading-relaxed">
-                    {lstData?.summary.interpretation}
-                  </p>
+                      <p className="text-[12px] text-[#6F6F6F] leading-relaxed">
+                        {lstData?.summary.interpretation}
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
 
@@ -339,6 +360,27 @@ export const AnalystSidebar: React.FC<AnalystSidebarProps> = ({
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* TAB 8: WOMEN SAFETY */}
+              {activeTab === 'safety' && (
+                <div className="space-y-4">
+                  {womenSafetyData?.is_data_available === false ? (
+                    <div className="p-4 bg-[#FAF9F7] border border-[#E5E5E2] text-center text-[#8B0000] font-semibold text-[12px]">
+                      Data Unavailable: {womenSafetyData.disclaimer}
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-[#FAF9F7] border border-[#E5E5E2]">
+                      <div className="text-[10px] uppercase font-bold text-[#8B0000]">Women Safety Risk Score</div>
+                      <div className="text-[28px] font-bold text-[#8B0000] font-mono mt-1">
+                        {womenSafetyData?.risk_score}
+                      </div>
+                      <p className="text-[12px] text-[#6F6F6F] mt-2 leading-relaxed">
+                        {womenSafetyData?.key_insights?.[0]}
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </>

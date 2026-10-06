@@ -78,9 +78,10 @@ export interface NDVIResponse {
   low_veg_percent: number;
   grid_geojson?: any;
   summary: MetricSummary;
-  date_acquired: string;
-  sensor: string;
+  date_acquired?: string;
+  sensor?: string;
   is_demo: boolean;
+  is_data_available?: boolean;
 }
 
 export interface NDBIResponse {
@@ -91,9 +92,10 @@ export interface NDBIResponse {
   low_builtup_percent: number;
   grid_geojson?: any;
   summary: MetricSummary;
-  date_acquired: string;
-  sensor: string;
+  date_acquired?: string;
+  sensor?: string;
   is_demo: boolean;
+  is_data_available?: boolean;
 }
 
 export interface LSTResponse {
@@ -105,8 +107,9 @@ export interface LSTResponse {
   uhi_severity: 'low' | 'moderate' | 'severe' | 'critical';
   grid_geojson?: any;
   summary: MetricSummary;
-  sensor: string;
+  sensor?: string;
   is_demo: boolean;
+  is_data_available?: boolean;
 }
 
 export interface LULCClass {
@@ -124,6 +127,7 @@ export interface LULCResponse {
   accuracy_kappa: number;
   year: number;
   is_demo: boolean;
+  is_data_available?: boolean;
 }
 
 export interface ChangeDetectionResponse {
@@ -137,6 +141,31 @@ export interface ChangeDetectionResponse {
   change_matrix: Record<string, number>;
   change_geojson?: any;
   is_demo: boolean;
+  is_data_available?: boolean;
+}
+
+export interface CrimeYearStat {
+  year: number;
+  total_crimes_against_women: number;
+}
+
+export interface WomenSafetyResponse {
+  study_area: string;
+  state_or_region: string;
+  district_or_city: string;
+  granularity: string;
+  data_source: string;
+  time_series_years: CrimeYearStat[];
+  latest_year_total: number;
+  historical_10yr_trend: string;
+  ten_year_change_percent: number;
+  crime_rate_per_lakh_population: number;
+  risk_score: number;
+  risk_level: string;
+  score_breakdown: any;
+  key_insights: string[];
+  disclaimer: string;
+  is_data_available: boolean;
 }
 
 export interface ZoneAssessment {
@@ -184,8 +213,9 @@ export interface ReportSummary {
   connectivity?: FacilityConnectivityResult;
   ecological_impact?: ImpactAssessmentResponse;
   mcda_ranking?: TOPSISResponse;
+  women_safety?: WomenSafetyResponse;
   share_token: string;
 }
 
-export type ActiveLayer = 'none' | 'ndvi' | 'ndbi' | 'lst' | 'lulc' | 'change' | 'connectivity';
+export type ActiveLayer = 'none' | 'ndvi' | 'ndbi' | 'lst' | 'lulc' | 'change' | 'connectivity' | 'womenSafety';
 export type BaseMapStyle = 'light' | 'satellite';

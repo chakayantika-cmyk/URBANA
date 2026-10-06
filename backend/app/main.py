@@ -12,7 +12,7 @@ from .models.schemas import (
     StudyAreaRequest, NDVIResponse, NDBIResponse, LSTResponse,
     LULCResponse, ChangeDetectionResponse, ImpactAssessmentResponse,
     AHPWeightRequest, AHPWeightResponse, TOPSISResponse,
-    ReportSummary
+    ReportSummary, WomenSafetyResponse
 )
 from .services.geocoding import geocode_address, reverse_geocode
 from .services.facility_service import fetch_osm_facilities_overpass
@@ -192,6 +192,11 @@ async def get_change_detection(req: StudyAreaRequest):
 @app.post("/api/analysis/impact", response_model=ImpactAssessmentResponse)
 async def get_impact_assessment(req: StudyAreaRequest):
     return evaluate_impact_assessment(req.center.latitude, req.center.longitude, req.radius_km, req.location_name or "Study Area")
+
+@app.post("/api/analysis/women-safety", response_model=WomenSafetyResponse)
+async def get_women_safety(req: StudyAreaRequest):
+    from .services.women_safety import analyze_women_safety
+    return await analyze_women_safety(req.center.latitude, req.center.longitude, req.radius_km, req.location_name or "Study Area")
 
 # ==========================================
 # MCDA (AHP & TOPSIS) ENDPOINTS

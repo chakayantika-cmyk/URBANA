@@ -26,6 +26,12 @@ async def generate_comprehensive_report(
     # 3. MCDA TOPSIS Ranking
     mcda = compute_topsis_ranking(lat, lon, location_name=study_area_name)
     
+    # 4. Women Safety
+    from ..main import get_women_safety
+    from ..models.schemas import StudyAreaRequest, RoutePoint
+    req = StudyAreaRequest(center=RoutePoint(latitude=lat, longitude=lon), radius_km=5.0, location_name=study_area_name)
+    safety = await get_women_safety(req)
+    
     report = ReportSummary(
         report_id=report_id,
         title=f"Urban Ecological Intelligence & Connectivity Assessment — {study_area_name}",
@@ -34,6 +40,7 @@ async def generate_comprehensive_report(
         connectivity=conn,
         ecological_impact=impact,
         mcda_ranking=mcda,
+        women_safety=safety,
         share_token=token,
         generated_at=datetime.utcnow()
     )

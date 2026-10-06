@@ -48,6 +48,7 @@ export function App() {
   const [changeData, setChangeData] = useState<ChangeDetectionResponse | null>(null);
   const [impactData, setImpactData] = useState<ImpactAssessmentResponse | null>(null);
   const [topsisData, setTopsisData] = useState<TOPSISResponse | null>(null);
+  const [womenSafetyData, setWomenSafetyData] = useState<any | null>(null);
 
   // 4. UI & Modal State
   const [isLoading, setIsLoading] = useState(false);
@@ -129,14 +130,15 @@ export function App() {
 
   const runAnalystPipeline = async (lat: number, lon: number, name: string) => {
     try {
-      const [ndvi, ndbi, lst, lulc, change, impact, topsis] = await Promise.all([
+      const [ndvi, ndbi, lst, lulc, change, impact, topsis, womenSafety] = await Promise.all([
         api.getNDVI(lat, lon, 5.0, name),
         api.getNDBI(lat, lon, 5.0, name),
         api.getLST(lat, lon, 5.0, name),
         api.getLULC(lat, lon, 5.0, name),
         api.getChangeDetection(lat, lon, 5.0, name),
         api.getImpactAssessment(lat, lon, 5.0, name),
-        api.getTOPSIS(lat, lon, name)
+        api.getTOPSIS(lat, lon, name),
+        api.getWomenSafety(lat, lon, name)
       ]);
 
       setNdviData(ndvi);
@@ -146,6 +148,7 @@ export function App() {
       setChangeData(change);
       setImpactData(impact);
       setTopsisData(topsis);
+      setWomenSafetyData(womenSafety);
     } catch (e) {
       console.warn('Analyst sub-pipeline warning:', e);
     }
@@ -316,6 +319,7 @@ export function App() {
         changeData={changeData}
         impactData={impactData}
         topsisData={topsisData}
+        womenSafetyData={womenSafetyData}
         activeLayer={activeLayer}
         onSelectLayer={(lyr) => setActiveLayer(lyr)}
         isLoading={isLoading}

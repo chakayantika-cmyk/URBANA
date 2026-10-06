@@ -144,6 +144,19 @@ export const api = {
     return res.json();
   },
 
+  async getWomenSafety(lat: number, lon: number, name = 'Study Area'): Promise<any> {
+    const res = await fetch(`${API_BASE}/analysis/women-safety`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        center: { latitude: lat, longitude: lon },
+        radius_km: 5.0,
+        location_name: name
+      })
+    });
+    return res.json();
+  },
+
   async generateReport(lat: number, lon: number, address = '', name = 'Study Area'): Promise<ReportSummary> {
     const res = await fetch(
       `${API_BASE}/reports?lat=${lat}&lon=${lon}&address=${encodeURIComponent(address)}&location_name=${encodeURIComponent(name)}`,

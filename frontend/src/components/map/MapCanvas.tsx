@@ -280,6 +280,8 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
     const map = mapRef.current;
     if (!map || !selectedLocation) return;
 
+    // Removed automatic flyTo to preserve user's current zoom/center state
+    /*
     map.flyTo({
       center: [selectedLocation.longitude, selectedLocation.latitude],
       zoom: 14.5,
@@ -287,6 +289,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
       speed: 1.2,
       curve: 1.1
     });
+    */
 
     // Create / Update User Location Marker
     if (userMarkerRef.current) {
@@ -381,7 +384,8 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
       for (const c of coords) {
         bounds.extend(c);
       }
-      map.fitBounds(bounds, { padding: 90, maxZoom: 16 });
+      // Removed automatic fitBounds to prevent map from zooming out unexpectedly
+      // map.fitBounds(bounds, { padding: 90, maxZoom: 16 });
     }
   }, [activeRoute, renderRoute]);
 
