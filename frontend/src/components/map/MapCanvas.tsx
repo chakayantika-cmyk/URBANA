@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import { LocationState, FacilityRouteSummary, ActiveLayer, BaseMapStyle } from '../../types';
 
@@ -12,6 +12,7 @@ interface MapCanvasProps {
   hospitalFacility?: FacilityRouteSummary | null;
   schoolFacility?: FacilityRouteSummary | null;
   highwayFacility?: FacilityRouteSummary | null;
+  isLeftPanelOpen?: boolean;
 }
 
 const BASE_STYLES = {
@@ -26,7 +27,7 @@ const BASE_STYLES = {
           'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
         ],
         tileSize: 256,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution: ''
       }
     },
     layers: [
@@ -49,7 +50,7 @@ const BASE_STYLES = {
           'https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
         ],
         tileSize: 256,
-        attribution: '&copy; USGS, Esri, DigitalGlobe, GeoEye, Earthstar Geographics'
+        attribution: ''
       }
     },
     layers: [
@@ -73,17 +74,118 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
   onMapClick,
   hospitalFacility,
   schoolFacility,
-  highwayFacility
+  highwayFacility,
+  isLeftPanelOpen
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
-  
+  const currentStyleRef = useRef<BaseMapStyle>(baseMapStyle);
+  const onMapClickRef = useRef(onMapClick);
+  onMapClickRef.current = onMapClick;
+
   const userMarkerRef = useRef<maplibregl.Marker | null>(null);
   const hospitalMarkerRef = useRef<maplibregl.Marker | null>(null);
   const schoolMarkerRef = useRef<maplibregl.Marker | null>(null);
   const highwayMarkerRef = useRef<maplibregl.Marker | null>(null);
 
-  // Initialize MapLibre
+  // Helper to re-render route on map
+  const renderRoute = useCallback((map: maplibregl.Map, route: FacilityRouteSummary | null) => {
+    const sourceId = 'active-route-source';
+    const layerId = 'active-route-layer';
+    const casingId = 'active-route-casing';
+
+    if (map.getLayer(layerId)) map.removeLayer(layerId);
+    if (map.getLayer(casingId)) map.removeLayer(casingId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+    if (!route || !route.route_geom || !route.route_geom.coordinates || route.route_geom.coordinates.length === 0) {
+      return;
+    }
+
+    map.addSource(sourceId, {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: route.route_geom
+      }
+    });
+
+    // Dark casing line
+    map.addLayer({
+      id: casingId,
+      type: 'line',
+      source: sourceId,
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#111111',
+        'line-width': 6,
+        'line-opacity': 0.8
+      }
+    });
+
+    // Accent line
+    map.addLayer({
+      id: layerId,
+      type: 'line',
+      source: sourceId,
+      layout: {
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': '#8B0000',
+        'line-width': 4,
+        'line-opacity': 1.0
+      }
+    });
+  }, []);
+
+  // Helper to re-render ecological layer on map
+  const renderEcoLayer = useCallback((map: maplibregl.Map, layer: ActiveLayer, data: any) => {
+    const sourceId = 'eco-grid-source';
+    const fillLayerId = 'eco-grid-fill';
+    const lineLayerId = 'eco-grid-line';
+
+    if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
+    if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
+    if (map.getSource(sourceId)) map.removeSource(sourceId);
+
+    if (layer === 'none' || layer === 'connectivity' || !data || !data.grid_geojson) {
+      return;
+    }
+
+    map.addSource(sourceId, {
+      type: 'geojson',
+      data: data.grid_geojson
+    });
+
+    map.addLayer({
+      id: fillLayerId,
+      type: 'fill',
+      source: sourceId,
+      paint: {
+        'fill-color': ['get', 'color'],
+        'fill-opacity': 0.45
+      }
+    });
+
+    map.addLayer({
+      id: lineLayerId,
+      type: 'line',
+      source: sourceId,
+      paint: {
+        'line-color': '#FFFFFF',
+        'line-width': 0.5,
+        'line-opacity': 0.4
+      }
+    });
+  }, []);
+
+  // Initialize MapLibre ONCE
   useEffect(() => {
     if (!mapContainer.current) return;
 
@@ -95,31 +197,83 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
       style: BASE_STYLES[baseMapStyle] as any,
       center: [initialLon, initialLat],
       zoom: selectedLocation ? 14 : 12,
-      attributionControl: false
+      attributionControl: false,
+      trackResize: true,
+      dragRotate: true,
+      touchZoomRotate: true,
+      keyboard: true
     });
 
-    map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+    // Add navigation controls (zoom in/out, compass) without attribution
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right');
 
     map.on('click', (e: any) => {
-      if (onMapClick) {
-        onMapClick(e.lngLat.lat, e.lngLat.lng);
+      // If clicking directly on map canvas and not on custom layers
+      if (onMapClickRef.current) {
+        onMapClickRef.current(e.lngLat.lat, e.lngLat.lng);
       }
+    });
+
+    // Grid cell popup click handler
+    map.on('click', 'eco-grid-fill', (e: any) => {
+      if (!e.features || e.features.length === 0) return;
+      const feat = e.features[0];
+      const props = feat.properties;
+      new maplibregl.Popup()
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<div class="text-[11px] uppercase tracking-wider font-bold text-[#8B0000]">${props.metric || ''}</div><div class="text-[13px] font-bold text-[#111111] mt-0.5">${props.category || ''}</div><div class="text-[11px] text-[#6F6F6F] font-mono mt-1">Value: ${props.value}</div>`
+        )
+        .addTo(map);
+    });
+
+    map.on('mouseenter', 'eco-grid-fill', () => {
+      map.getCanvas().style.cursor = 'pointer';
+    });
+    map.on('mouseleave', 'eco-grid-fill', () => {
+      map.getCanvas().style.cursor = '';
     });
 
     mapRef.current = map;
 
+    // ResizeObserver ensures seamless resizing when panels toggle or window resizes
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    });
+    resizeObserver.observe(mapContainer.current);
+
     return () => {
+      resizeObserver.disconnect();
       map.remove();
+      mapRef.current = null;
     };
   }, []);
 
-  // Update Base Map Style
+  // Update Base Map Style dynamically without full map remount
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || currentStyleRef.current === baseMapStyle) return;
+    
+    currentStyleRef.current = baseMapStyle;
     map.setStyle(BASE_STYLES[baseMapStyle] as any);
-  }, [baseMapStyle]);
+
+    map.once('style.load', () => {
+      renderRoute(map, activeRoute);
+      renderEcoLayer(map, activeLayer, layerData);
+    });
+  }, [baseMapStyle, activeRoute, activeLayer, layerData, renderRoute, renderEcoLayer]);
+
+  // Handle panel toggle resize trigger
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (mapRef.current) {
+        mapRef.current.resize();
+      }
+    }, 320);
+    return () => clearTimeout(timer);
+  }, [isLeftPanelOpen]);
 
   // Handle Location Change & Camera Fly-To
   useEffect(() => {
@@ -134,7 +288,7 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
       curve: 1.1
     });
 
-    // Create / Update User Location Marker (Minimal black circle with pulse)
+    // Create / Update User Location Marker
     if (userMarkerRef.current) {
       userMarkerRef.current.remove();
     }
@@ -218,140 +372,30 @@ export const MapCanvas: React.FC<MapCanvasProps> = ({
     const map = mapRef.current;
     if (!map) return;
 
-    const sourceId = 'active-route-source';
-    const layerId = 'active-route-layer';
-    const casingId = 'active-route-casing';
+    renderRoute(map, activeRoute);
 
-    const cleanRouteLayers = () => {
-      if (map.getLayer(layerId)) map.removeLayer(layerId);
-      if (map.getLayer(casingId)) map.removeLayer(casingId);
-      if (map.getSource(sourceId)) map.removeSource(sourceId);
-    };
-
-    if (!activeRoute || !activeRoute.route_geom || !activeRoute.route_geom.coordinates || activeRoute.route_geom.coordinates.length === 0) {
-      cleanRouteLayers();
-      return;
+    if (activeRoute && activeRoute.route_geom && activeRoute.route_geom.coordinates && activeRoute.route_geom.coordinates.length > 0) {
+      // Fit map bounds to encompass the entire route
+      const coords = activeRoute.route_geom.coordinates;
+      const bounds = new maplibregl.LngLatBounds(coords[0], coords[0]);
+      for (const c of coords) {
+        bounds.extend(c);
+      }
+      map.fitBounds(bounds, { padding: 90, maxZoom: 16 });
     }
-
-    cleanRouteLayers();
-
-    map.addSource(sourceId, {
-      type: 'geojson',
-      data: {
-        type: 'Feature',
-        properties: {},
-        geometry: activeRoute.route_geom
-      }
-    });
-
-    // Dark casing line
-    map.addLayer({
-      id: casingId,
-      type: 'line',
-      source: sourceId,
-      layout: {
-        'line-join': 'round',
-        'line-cap': 'round'
-      },
-      paint: {
-        'line-color': '#111111',
-        'line-width': 6,
-        'line-opacity': 0.8
-      }
-    });
-
-    // Accent line
-    map.addLayer({
-      id: layerId,
-      type: 'line',
-      source: sourceId,
-      layout: {
-        'line-join': 'round',
-        'line-cap': 'round'
-      },
-      paint: {
-        'line-color': '#8B0000',
-        'line-width': 4,
-        'line-opacity': 1.0
-      }
-    });
-
-    // Fit map bounds to encompass the entire route
-    const coords = activeRoute.route_geom.coordinates;
-    const bounds = new maplibregl.LngLatBounds(coords[0], coords[0]);
-    for (const c of coords) {
-      bounds.extend(c);
-    }
-    map.fitBounds(bounds, { padding: 90, maxZoom: 16 });
-
-  }, [activeRoute]);
+  }, [activeRoute, renderRoute]);
 
   // Update Ecological GeoJSON Vector Layers
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    const sourceId = 'eco-grid-source';
-    const fillLayerId = 'eco-grid-fill';
-    const lineLayerId = 'eco-grid-line';
-
-    const cleanEcoLayers = () => {
-      if (map.getLayer(fillLayerId)) map.removeLayer(fillLayerId);
-      if (map.getLayer(lineLayerId)) map.removeLayer(lineLayerId);
-      if (map.getSource(sourceId)) map.removeSource(sourceId);
-    };
-
-    if (activeLayer === 'none' || activeLayer === 'connectivity' || !layerData || !layerData.grid_geojson) {
-      cleanEcoLayers();
-      return;
-    }
-
-    cleanEcoLayers();
-
-    map.addSource(sourceId, {
-      type: 'geojson',
-      data: layerData.grid_geojson
-    });
-
-    map.addLayer({
-      id: fillLayerId,
-      type: 'fill',
-      source: sourceId,
-      paint: {
-        'fill-color': ['get', 'color'],
-        'fill-opacity': 0.45
-      }
-    });
-
-    map.addLayer({
-      id: lineLayerId,
-      type: 'line',
-      source: sourceId,
-      paint: {
-        'line-color': '#FFFFFF',
-        'line-width': 0.5,
-        'line-opacity': 0.4
-      }
-    });
-
-    // Hover tooltip for grid cells
-    map.on('click', fillLayerId, (e: any) => {
-      if (!e.features || e.features.length === 0) return;
-      const feat = e.features[0];
-      const props = feat.properties;
-      new maplibregl.Popup()
-        .setLngLat(e.lngLat)
-        .setHTML(
-          `<div class="text-[11px] uppercase tracking-wider font-bold text-[#8B0000]">${props.metric || activeLayer}</div><div class="text-[13px] font-bold text-[#111111] mt-0.5">${props.category || ''}</div><div class="text-[11px] text-[#6F6F6F] font-mono mt-1">Value: ${props.value}</div>`
-        )
-        .addTo(map);
-    });
-
-  }, [activeLayer, layerData]);
+    renderEcoLayer(map, activeLayer, layerData);
+  }, [activeLayer, layerData, renderEcoLayer]);
 
   return (
-    <div className="relative w-full h-full">
-      <div ref={mapContainer} className="w-full h-full" />
+    <div className="relative w-full h-full pointer-events-auto">
+      <div ref={mapContainer} className="w-full h-full" tabIndex={0} />
     </div>
   );
 };

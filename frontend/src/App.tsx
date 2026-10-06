@@ -23,7 +23,7 @@ import { LocationCard } from './components/connectivity/LocationCard';
 import { AnalystSidebar } from './components/analytics/AnalystSidebar';
 import { ReportModal } from './components/reports/ReportModal';
 import { ShareModal } from './components/reports/ShareModal';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function App() {
   // 1. Global Location & View State
@@ -36,6 +36,7 @@ export function App() {
   const [activeLayer, setActiveLayer] = useState<ActiveLayer>('none');
   const [isLayerMenuOpen, setIsLayerMenuOpen] = useState(false);
   const [isAnalystSidebarOpen, setIsAnalystSidebarOpen] = useState(false);
+  const [isLeftPanelOpen, setIsLeftPanelOpen] = useState(true);
   const [activeRoute, setActiveRoute] = useState<FacilityRouteSummary | null>(null);
 
   // 3. Analytical Data State
@@ -197,6 +198,8 @@ export function App() {
     return null;
   };
 
+  const hasLeftPanelContent = activeMode === 'citizen' || (activeMode === 'analyst' && selectedLocation && !isAnalyzed);
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#F7F7F5] font-sans select-none">
       {/* 1. Top Navigation Bar */}
@@ -225,35 +228,68 @@ export function App() {
           hospitalFacility={connectivityResult?.nearest_hospital}
           schoolFacility={connectivityResult?.nearest_school}
           highwayFacility={connectivityResult?.nearest_highway}
+          isLeftPanelOpen={Boolean(isLeftPanelOpen && hasLeftPanelContent)}
         />
       </main>
 
-      {/* 3. Floating Left Panel (Citizen Mode Connectivity Drawer or Location Card) */}
-      <div className="fixed top-20 left-4 md:left-8 z-10 space-y-3 pointer-events-auto">
-        {activeMode === 'citizen' && (
-          <ConnectivityPanel
-            selectedLocation={selectedLocation}
-            connectivityResult={connectivityResult}
-            isLoading={isLoading}
-            activeRoute={activeRoute}
-            onSelectRoute={(summary) => setActiveRoute(summary)}
-            travelMode={travelMode}
-            onChangeTravelMode={handleChangeTravelMode}
-            onRefresh={() => selectedLocation && executeAnalysis(selectedLocation, travelMode)}
-            onOpenReport={() => setIsReportOpen(true)}
-            onOpenShare={() => setIsShareOpen(true)}
-          />
-        )}
+      {/* 3. Collapsible Left Panel with Small Edge Toggle Button */}
+      {hasLeftPanelContent && (
+        <div className="fixed top-20 left-4 md:left-8 z-10 pointer-events-none flex items-start transition-all duration-300">
+          {/* Main Panel Box */}
+          <div
+            className={`transition-all duration-300 origin-left ease-in-out ${
+              isLeftPanelOpen
+                ? 'opacity-100 scale-100 translate-x-0 pointer-events-auto max-w-md w-full'
+                : 'opacity-0 scale-95 -translate-x-full pointer-events-none max-w-0 overflow-hidden'
+            }`}
+          >
+            {activeMode === 'citizen' && (
+              <ConnectivityPanel
+                selectedLocation={selectedLocation}
+                connectivityResult={connectivityResult}
+                isLoading={isLoading}
+                activeRoute={activeRoute}
+                onSelectRoute={(summary) => setActiveRoute(summary)}
+                travelMode={travelMode}
+                onChangeTravelMode={handleChangeTravelMode}
+                onRefresh={() => selectedLocation && executeAnalysis(selectedLocation, travelMode)}
+                onOpenReport={() => setIsReportOpen(true)}
+                onOpenShare={() => setIsShareOpen(true)}
+              />
+            )}
 
-        {activeMode === 'analyst' && selectedLocation && !isAnalyzed && (
-          <LocationCard
-            location={selectedLocation}
-            onAnalyze={() => executeAnalysis(selectedLocation, travelMode)}
-            isLoading={isLoading}
-            isAnalyzed={isAnalyzed}
-          />
-        )}
-      </div>
+            {activeMode === 'analyst' && selectedLocation && !isAnalyzed && (
+              <LocationCard
+                location={selectedLocation}
+                onAnalyze={() => executeAnalysis(selectedLocation, travelMode)}
+                isLoading={isLoading}
+                isAnalyzed={isAnalyzed}
+              />
+            )}
+          </div>
+
+          {/* Small Toggle Button on Panel Edge */}
+          <button
+            onClick={() => setIsLeftPanelOpen((prev) => !prev)}
+            title={isLeftPanelOpen ? 'Collapse panel' : 'Restore panel'}
+            aria-label={isLeftPanelOpen ? 'Collapse panel' : 'Restore panel'}
+            className={`pointer-events-auto flex items-center justify-center bg-white border border-[#E5E5E2] hover:border-[#111111] hover:bg-[#F7F7F5] shadow-md transition-all duration-200 text-[#111111] ${
+              isLeftPanelOpen
+                ? 'ml-2 p-1.5 self-start mt-2'
+                : 'fixed top-20 left-4 p-2'
+            }`}
+          >
+            {isLeftPanelOpen ? (
+              <ChevronLeft className="w-4 h-4" />
+            ) : (
+              <div className="flex items-center gap-1.5 px-1 py-0.5">
+                <ChevronRight className="w-4 h-4 text-[#8B0000]" />
+                <span className="text-[11px] font-bold uppercase tracking-wider pr-1">Panel</span>
+              </div>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* 4. Floating Map Controls (Layers & Basemap Switcher) */}
       <MapControls

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActiveLayer, BaseMapStyle } from '../../types';
-import { Layers, Map as MapIcon, Globe, Locate, Plus, Minus } from 'lucide-react';
+import { Layers, Map as MapIcon, Globe, Locate } from 'lucide-react';
 
 interface MapControlsProps {
   activeLayer: ActiveLayer;
@@ -22,10 +22,10 @@ export const MapControls: React.FC<MapControlsProps> = ({
   onLocateMe
 }) => {
   return (
-    <div className="fixed bottom-6 left-6 z-20 flex flex-col items-start gap-2">
+    <div className="fixed bottom-6 left-6 z-20 flex flex-col items-start gap-2 pointer-events-none">
       {/* Floating Layer Menu */}
       {isLayerMenuOpen && (
-        <div className="bg-white border border-[#E5E5E2] shadow-lg p-3 w-56 space-y-2 mb-1">
+        <div className="bg-white border border-[#E5E5E2] shadow-lg p-3 w-56 space-y-2 mb-1 pointer-events-auto">
           <div className="text-[10px] font-bold uppercase tracking-wider text-[#6F6F6F] border-b border-[#E5E5E2] pb-1.5 flex items-center justify-between">
             <span>Map Layers</span>
             <span className="font-mono text-[#8B0000]">Active</span>
@@ -58,7 +58,7 @@ export const MapControls: React.FC<MapControlsProps> = ({
       )}
 
       {/* Primary Tool Buttons */}
-      <div className="flex bg-white border border-[#E5E5E2] shadow-md divide-x divide-[#E5E5E2]">
+      <div className="flex bg-white border border-[#E5E5E2] shadow-md divide-x divide-[#E5E5E2] pointer-events-auto">
         <button
           onClick={onToggleLayerMenu}
           title="Toggle Environmental & Urban Layers"
